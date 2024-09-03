@@ -1,0 +1,320 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+type AccessToken {
+  created_at: DateTime!
+  id: ID!
+  session_id: String!
+  status_login: Boolean!
+  status_token: Boolean!
+  type: AccessTokenType!
+  updated_at: DateTime!
+  user: User!
+  user_agent: String!
+  user_id: Int!
+}
+
+enum AccessTokenType {
+  login
+  refresh_token
+}
+
+input CreateDeviceConfig {
+  delay_on_send: Float
+  is_delayed_on_send: Boolean
+  notify_when_connect: Boolean
+  notify_when_disconnect: Boolean
+  notify_when_error: Boolean
+  telegram_bot_token: String
+  telegram_chat_id: String
+}
+
+input CreateDeviceInput {
+  config: CreateDeviceConfig
+  name: String!
+  phone_number: String!
+}
+
+"""Create User Input"""
+input CreateUserDto {
+  email: String
+  name: String
+  password: String
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+type Device {
+  DeviceConfigurations: DeviceConfigurations
+  MessageHistory: [MessageHistory!]
+  _count: DeviceCount!
+  created_at: DateTime!
+  disconnected_at: DateTime
+  id: ID!
+  last_seen: DateTime
+  name: String!
+  phone_number: String!
+  status: DeviceStatus!
+  token: String!
+  updated_at: DateTime!
+  user: User!
+  user_id: Int!
+}
+
+type DeviceConfigurationEntity {
+  created_at: DateTime
+  delay_on_send: Float
+  device_id: Float
+  id: Float
+  is_delayed_on_send: Boolean
+  notify_when_connect: Boolean
+  notify_when_disconnect: Boolean
+  notify_when_error: Boolean
+  telegram_bot_token: String
+  telegram_chat_id: String
+  updated_at: DateTime
+}
+
+type DeviceConfigurations {
+  created_at: DateTime!
+  delay_on_send: Int
+  device: Device!
+  device_id: Int!
+  id: ID!
+  is_delayed_on_send: Boolean!
+  notify_when_connect: Boolean!
+  notify_when_disconnect: Boolean!
+  notify_when_error: Boolean!
+  telegram_bot_token: String
+  telegram_chat_id: String
+  updated_at: DateTime!
+}
+
+type DeviceCount {
+  MessageHistory: Int!
+}
+
+type DeviceEntity {
+  """Time the device was created"""
+  created_at: DateTime!
+
+  """Configuration of the device"""
+  deviceConfigurations: DeviceConfigurationEntity
+
+  """Last time the device was disconnected"""
+  disconnected_at: DateTime!
+
+  """Unique identifier for the device"""
+  id: Int!
+
+  """Last time the device was seen online"""
+  last_seen: DateTime!
+
+  """Name of the device"""
+  name: String!
+
+  """Phone number of the device"""
+  phone_number: String!
+
+  """Status of the device"""
+  status: String!
+
+  """Token of the device for authentication REST API"""
+  token: String!
+
+  """Time the device was last updated"""
+  updated_at: DateTime!
+
+  """Unique identifier of the user who owns the device"""
+  user_id: Int!
+}
+
+enum DeviceStatus {
+  connected
+  disconnected
+  loading
+  waiting_for_qr_scan
+}
+
+"""Login Payload"""
+input LoginDto {
+  email: String!
+  password: String!
+}
+
+type LoginEntity {
+  token: Token
+  user: UserEntity
+}
+
+type MessageHistory {
+  created_at: DateTime!
+  delivered_at: DateTime
+  device: Device!
+  device_id: Int!
+  id: ID!
+  message: String!
+  status: MessageStatus!
+  target_number: String!
+  updated_at: DateTime!
+}
+
+type MessageHistoryAvgAggregate {
+  device_id: Float
+  id: Float
+}
+
+type MessageHistoryCountAggregate {
+  _all: Int!
+  created_at: Int!
+  delivered_at: Int!
+  device_id: Int!
+  id: Int!
+  message: Int!
+  status: Int!
+  target_number: Int!
+  updated_at: Int!
+}
+
+type MessageHistoryMaxAggregate {
+  created_at: DateTime
+  delivered_at: DateTime
+  device_id: Int
+  id: Int
+  message: String
+  status: MessageStatus
+  target_number: String
+  updated_at: DateTime
+}
+
+type MessageHistoryMinAggregate {
+  created_at: DateTime
+  delivered_at: DateTime
+  device_id: Int
+  id: Int
+  message: String
+  status: MessageStatus
+  target_number: String
+  updated_at: DateTime
+}
+
+type MessageHistorySumAggregate {
+  device_id: Int
+  id: Int
+}
+
+type MessagePaginated {
+  data: [MessageHistory!]
+  meta: MetaType!
+}
+
+enum MessageStatus {
+  failed
+  sent
+}
+
+type MetaType {
+  currentPage: Int!
+  isFirstPage: Boolean!
+  isLastPage: Boolean!
+  nextPage: Int
+  pageCount: Int!
+  previousPage: Int
+  totalCount: Int!
+}
+
+type Mutation {
+  createDevice(createDeviceInput: CreateDeviceInput!): DeviceEntity!
+  loginAccount(payload: LoginDto!): LoginEntity
+  logoutAccount: Boolean
+  refreshToken: LoginEntity
+  registerAccount(payload: RegisterDto!): LoginEntity
+  removeDevice(id: Int!): DeviceEntity!
+  removeMessage(id: Int!): MessageHistory!
+  sendMessage(payload: SendMessageDto!): MessageHistory!
+  updateDevice(id: Int!, updateDeviceInput: UpdateDeviceInput!): DeviceEntity!
+
+  """Create a new user"""
+  userCreate(payload: CreateUserDto!): UserEntity
+
+  """Update a user"""
+  userUpdate(id: Float!, payload: UpdateUserDto!): UserEntity
+}
+
+type Query {
+  device(id: Int!): DeviceEntity!
+  devices: [DeviceEntity!]!
+  message(id: Int!): MessageHistory!
+  messages(limit: Int = 10, page: Int = 1): MessagePaginated!
+
+  """Find one user by email"""
+  userFindOneByEmail(email: String!): UserEntity!
+
+  """Find one user by ID"""
+  userFindOneByID(id: Float!): UserEntity!
+
+  """Find all users"""
+  usersFindAll: [UserEntity!]!
+}
+
+input RegisterDto {
+  email: String
+  name: String
+  password: String
+  password_confirmation: String!
+}
+
+input SendMessageDto {
+  device_id: Int!
+  message: String!
+  target_number: String!
+}
+
+type Token {
+  accessToken: String
+  refreshToken: String
+}
+
+input UpdateDeviceInput {
+  config: String
+  name: String
+  phone_number: String
+}
+
+"""Update User Input"""
+input UpdateUserDto {
+  email: String
+  name: String
+  password: String
+}
+
+type User {
+  Device: [Device!]
+  _count: UserCount!
+  avatar: String
+  created_at: DateTime!
+  email: String!
+  id: ID!
+  name: String!
+  sessions: [AccessToken!]
+  updated_at: DateTime!
+}
+
+type UserCount {
+  Device: Int!
+  sessions: Int!
+}
+
+"""User Entity"""
+type UserEntity {
+  avatar: String
+  created_at: DateTime
+  email: String
+  id: Float
+  name: String
+  updated_at: DateTime
+}

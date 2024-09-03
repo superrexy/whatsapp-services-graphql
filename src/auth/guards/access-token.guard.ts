@@ -1,13 +1,24 @@
-import { ExecutionContext, Injectable } from '@nestjs/common';
+import {
+  ExecutionContext,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { GqlExecutionContext } from '@nestjs/graphql';
 import { AuthGuard } from '@nestjs/passport';
 import { ALLOW_UNAUTHORIZED_KEY } from '../../common/decorators/allow-unauthorized.decorators';
 import { REFRESH_TOKEN } from '../../common/decorators/refresh-token.decorators';
 
 @Injectable()
 export class AccessTokenGuard extends AuthGuard('jwt-access-token') {
-  constructor(private readonly reflector: Reflector) {
+  constructor(private reflector: Reflector) {
     super();
+  }
+
+  getRequest(context: ExecutionContext) {
+    const ctx = GqlExecutionContext.create(context);
+    const { req } = ctx.getContext();
+    return req;
   }
 
   handleRequest<TUser = any>(
@@ -17,6 +28,10 @@ export class AccessTokenGuard extends AuthGuard('jwt-access-token') {
     context: ExecutionContext,
     status?: any,
   ): TUser {
+    const ctx = GqlExecutionContext.create(context);
+    const { req } = ctx.getContext();
+
+    const accessToken = req.headers.authorization?.split(' ')[1];
     const isAllowUnauthorizedRequest = this.reflector.get<boolean>(
       ALLOW_UNAUTHORIZED_KEY,
       context.getHandler(),
@@ -38,6 +53,8 @@ export class AccessTokenGuard extends AuthGuard('jwt-access-token') {
 
       if (err || !user) return null;
     }
+
+    if (!accessToken) throw new UnauthorizedException();
 
     return super.handleRequest(err, user, info, context, status);
   }

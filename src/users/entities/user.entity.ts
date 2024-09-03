@@ -1,34 +1,30 @@
-import { ApiProperty } from '@nestjs/swagger';
-import type { User } from '@prisma/client';
-import { Exclude } from 'class-transformer';
+import { Field, ObjectType } from '@nestjs/graphql';
 
-export class UserEntity implements User {
+@ObjectType({ description: 'User Entity' })
+export class UserEntity {
   constructor(partial: Partial<UserEntity>) {
     Object.assign(this, partial);
 
-    if (!partial.avatar) {
+    if (!partial?.avatar) {
       this.avatar = `https://ui-avatars.com/api/?name=${this.name}&size=256&background=random&color=fff&rounded=true`;
     }
   }
 
-  @ApiProperty()
+  @Field({ nullable: true })
   id: number;
 
-  @ApiProperty()
+  @Field({ nullable: true })
   name: string;
 
-  @ApiProperty()
+  @Field({ nullable: true })
   email: string;
 
-  @Exclude()
-  password: string;
-
-  @ApiProperty()
+  @Field({ nullable: true })
   avatar: string;
 
-  @ApiProperty()
+  @Field({ nullable: true })
   created_at: Date;
 
-  @ApiProperty()
+  @Field({ nullable: true })
   updated_at: Date;
 }

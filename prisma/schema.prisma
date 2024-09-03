@@ -8,6 +8,12 @@ generator client {
   provider = "prisma-client-js"
 }
 
+generator nestgraphql {
+  provider = "node node_modules/prisma-nestjs-graphql"
+  output   = "../src/common/prisma-graphql"
+  reExport = Directories
+}
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
@@ -17,11 +23,13 @@ model User {
   id         Int           @id @default(autoincrement())
   name       String
   email      String        @unique
+  /// @HideField({ input: false, output: true })
   password   String
   avatar     String?
   created_at DateTime      @default(now())
   updated_at DateTime      @updatedAt
   sessions   AccessToken[]
+  Device     Device[]
 
   @@map("users")
 }
@@ -45,4 +53,65 @@ model AccessToken {
 
   @@index([session_id])
   @@map("access_tokens")
+}
+
+enum DeviceStatus {
+  connected
+  disconnected
+  waiting_for_qr_scan
+  loading
+}
+
+model Device {
+  id                   Int                   @id @default(autoincrement())
+  name                 String
+  phone_number         String
+  user                 User                  @relation(fields: [user_id], references: [id])
+  user_id              Int
+  status               DeviceStatus          @default(waiting_for_qr_scan)
+  token                String
+  last_seen            DateTime?
+  disconnected_at      DateTime?
+  created_at           DateTime              @default(now())
+  updated_at           DateTime              @updatedAt
+  DeviceConfigurations DeviceConfigurations?
+  MessageHistory       MessageHistory[]
+
+  @@map("devices")
+}
+
+model DeviceConfigurations {
+  id                     Int      @id @default(autoincrement())
+  device_id              Int      @unique
+  device                 Device   @relation(fields: [device_id], references: [id], onDelete: Cascade)
+  is_delayed_on_send     Boolean  @default(false)
+  delay_on_send          Int?
+  notify_when_disconnect Boolean  @default(false)
+  notify_when_connect    Boolean  @default(false)
+  notify_when_error      Boolean  @default(false)
+  telegram_chat_id       String?
+  telegram_bot_token     String?
+  created_at             DateTime @default(now())
+  updated_at             DateTime @updatedAt
+
+  @@map("device_configurations")
+}
+
+enum MessageStatus {
+  sent
+  failed
+}
+
+model MessageHistory {
+  id            Int           @id @default(autoincrement())
+  device_id     Int
+  device        Device        @relation(fields: [device_id], references: [id], onDelete: Cascade)
+  target_number String
+  message       String
+  status        MessageStatus @default(sent)
+  delivered_at  DateTime?
+  created_at    DateTime      @default(now())
+  updated_at    DateTime      @updatedAt
+
+  @@map("message_history")
 }

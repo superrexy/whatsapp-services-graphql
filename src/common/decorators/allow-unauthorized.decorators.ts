@@ -1,5 +1,4 @@
 import { applyDecorators, SetMetadata, UseGuards } from '@nestjs/common';
-import { Reflector } from '@nestjs/core';
 import {
   ApiBearerAuth,
   ApiForbiddenResponse,
@@ -12,7 +11,7 @@ export const ALLOW_UNAUTHORIZED_KEY = 'allow_unauthorized';
 export const AllowUnauthorized = () => {
   return applyDecorators(
     SetMetadata(ALLOW_UNAUTHORIZED_KEY, true),
-    UseGuards(new AccessTokenGuard(new Reflector())),
+    UseGuards(AccessTokenGuard),
     ApiBearerAuth(),
     ApiUnauthorizedResponse({ description: 'Unauthorized' }),
     ApiForbiddenResponse({ description: 'Forbidden' }),

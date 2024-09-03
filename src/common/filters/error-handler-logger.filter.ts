@@ -1,22 +1,12 @@
-import { ArgumentsHost, Catch, HttpServer } from '@nestjs/common';
-import { AbstractHttpAdapter, BaseExceptionFilter } from '@nestjs/core';
+import { ArgumentsHost, Catch, HttpException } from '@nestjs/common';
+import { GqlExceptionFilter } from '@nestjs/graphql';
 import { logger } from 'nestjs-i18n';
-import { MyLogger } from '../logger/logger.service';
 
-@Catch()
-export class ErrorHandlerLoggerFilter extends BaseExceptionFilter {
-  constructor(logger: MyLogger, applicationRef: HttpServer) {
-    super(applicationRef);
-  }
-
-  handleUnknownError(
-    exception: unknown,
-    host: ArgumentsHost,
-    applicationRef:
-      | HttpServer<any, any, any>
-      | AbstractHttpAdapter<any, any, any>,
-  ): void {
+@Catch(HttpException)
+export class ErrorHandlerLoggerFilter implements GqlExceptionFilter {
+  catch(exception: any, host: ArgumentsHost) {
     logger.error(exception, { context: ErrorHandlerLoggerFilter.name });
-    super.handleUnknownError(exception, host, applicationRef);
+    // const gqlHost = GqlArgumentsHost.create(host);
+    return exception;
   }
 }

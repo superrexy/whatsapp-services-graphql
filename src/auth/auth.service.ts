@@ -1,13 +1,10 @@
 import {
   ForbiddenException,
-  Inject,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
-import { REQUEST } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import { Prisma } from '@prisma/client';
-import { Request } from 'express';
 import { I18nService } from 'nestjs-i18n';
 import { PrismaService } from 'nestjs-prisma';
 import { JwtPayload } from '../common/interfaces/jwt-payload.interfaces';
@@ -19,7 +16,6 @@ import { PasswordService } from './password.service';
 @Injectable()
 export class AuthService {
   constructor(
-    @Inject(REQUEST) private readonly req: Request,
     private readonly userService: UsersService,
     private readonly jwtService: JwtService,
     private readonly prisma: PrismaService,
@@ -27,7 +23,13 @@ export class AuthService {
     private readonly passwordService: PasswordService,
   ) {}
 
-  async login({ payload }: { payload: LoginDto }) {
+  async login({
+    payload,
+    userAgent,
+  }: {
+    payload: LoginDto;
+    userAgent: string;
+  }) {
     const user = await this.userService.findOneByEmail(payload.email);
 
     if (!user)
@@ -44,16 +46,23 @@ export class AuthService {
         this.i18n.t('message.CREDENTIALS_INVALID'),
       );
 
-    const session = await this.generateUserAccess({
-      user_id: user.id,
-      status_login: true,
-      status_token: true,
-      user_agent: this.req.headers['user-agent'],
-      type: 'login',
-    });
+    const token = await this.prisma.$transaction(async (tx) => {
+      const session = await this.generateUserAccess({
+        user_id: user.id,
+        status_login: true,
+        status_token: true,
+        user_agent: userAgent,
+        type: 'login',
+      });
 
-    const token = await this.generateTokens({
-      sub: session.session_id,
+      const token = await this.generateTokens({
+        sub: session.session_id,
+      });
+
+      return {
+        accessToken: token.accessToken,
+        refreshToken: token.refreshToken,
+      };
     });
 
     return {
@@ -62,7 +71,13 @@ export class AuthService {
     };
   }
 
-  async register({ payload }: { payload: RegisterDto }) {
+  async register({
+    payload,
+    userAgent,
+  }: {
+    payload: RegisterDto;
+    userAgent: string;
+  }) {
     const user = await this.userService.findOneByEmail(payload.email, false);
     if (user)
       throw new ForbiddenException(this.i18n.t('message.EMAIL_CONFLICT'));
@@ -82,7 +97,7 @@ export class AuthService {
       user_id: data.id,
       status_login: true,
       status_token: true,
-      user_agent: this.req.headers['user-agent'],
+      user_agent: userAgent,
       type: 'login',
     });
 
@@ -96,8 +111,8 @@ export class AuthService {
     };
   }
 
-  async logout() {
-    const sessionId = this.req.user['sub'];
+  async logout(user: any) {
+    const sessionId = user['sub'];
 
     const userAccess = await this.prisma.accessToken.findFirst({
       where: {
@@ -121,8 +136,8 @@ export class AuthService {
     });
   }
 
-  async refreshTokens() {
-    const sessionId = this.req.user['sub'];
+  async refreshTokens(user: any, userAgent: string) {
+    const sessionId = user['sub'];
     if (!sessionId) throw new UnauthorizedException();
 
     const userAccess = await this.prisma.accessToken.findFirst({
@@ -133,7 +148,7 @@ export class AuthService {
 
     if (!userAccess) throw new UnauthorizedException();
 
-    if (userAccess.user_agent !== this.req.headers['user-agent'])
+    if (userAccess.user_agent !== userAgent)
       throw new UnauthorizedException(
         this.i18n.t('message.TOKEN_FROM_OTHER_DEVICE'),
       );
@@ -160,7 +175,8 @@ export class AuthService {
       session_id: userAccessUpdate.session_id,
       status_login: false,
       status_token: true,
-      user_agent: this.req.headers['user-agent'],
+      // user_agent: this.req.headers['user-agent'],
+      user_agent: 'user-agent',
       type: 'refresh_token',
     });
 

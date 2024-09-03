@@ -1,10 +1,13 @@
-import { ClassSerializerInterceptor, ValidationPipe } from '@nestjs/common';
+import {
+  BadRequestException,
+  ClassSerializerInterceptor,
+  ValidationPipe,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { HttpAdapterHost, NestFactory, Reflector } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as compression from 'compression';
 import { WinstonModule } from 'nest-winston';
-import { I18nService } from 'nestjs-i18n';
 import { PrismaClientExceptionFilter } from 'nestjs-prisma';
 import { format, transports } from 'winston';
 import 'winston-daily-rotate-file';
@@ -14,8 +17,6 @@ import {
   NestConfig,
   SwaggerConfig,
 } from './common/configs/config.interface';
-import { ErrorHandlerLoggerFilter } from './common/filters/error-handler-logger.filter';
-import { ResponseWrapperInterceptor } from './common/interceptors/response-wrapper.interceptor';
 import { MyLogger } from './common/logger/logger.service';
 
 async function bootstrap() {
@@ -63,10 +64,25 @@ async function bootstrap() {
   app.use(compression());
 
   // Validation
-  app.useGlobalPipes(new ValidationPipe());
+  app.useGlobalPipes(
+    new ValidationPipe({
+      transform: true,
+      exceptionFactory: (errors) => {
+        const messages = errors.map((error) => {
+          return {
+            property: error.property,
+            constraints: Object.values(error.constraints),
+          };
+        });
+
+        return new BadRequestException(messages);
+      }, // TODO: Use graphql errors instead
+      forbidUnknownValues: true,
+    }),
+  );
   app.useGlobalInterceptors(
     new ClassSerializerInterceptor(app.get(Reflector)),
-    new ResponseWrapperInterceptor(app.get(Reflector), app.get(I18nService)),
+    // new ResponseWrapperInterceptor(app.get(Reflector), app.get(I18nService)),
   );
 
   // Enable Shutdown Hooks
@@ -76,7 +92,7 @@ async function bootstrap() {
   const { httpAdapter } = app.get(HttpAdapterHost);
   app.useGlobalFilters(
     new PrismaClientExceptionFilter(httpAdapter),
-    new ErrorHandlerLoggerFilter(app.get(MyLogger), httpAdapter),
+    // new ErrorHandlerLoggerFilter(),
   );
 
   const configService = app.get(ConfigService);

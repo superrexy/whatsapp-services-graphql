@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 import UploadModule from '../common/modules/upload-module.modules';
 import { UsersModule } from '../users/users.module';
-import { ProfileController } from './profile.controller';
 import { ProfileService } from './profile.service';
 
 @Module({
@@ -15,7 +14,6 @@ import { ProfileService } from './profile.service';
       },
     }),
   ],
-  controllers: [ProfileController],
   providers: [ProfileService],
 })
 export class ProfileModule {}
